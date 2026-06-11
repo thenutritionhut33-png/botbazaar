@@ -10,6 +10,12 @@ import { requestIdMiddleware } from './middleware/requestId';
 import { errorHandler, asyncHandler } from './middleware/errorHandler';
 import { globalRateLimiter } from './middleware/rateLimiter';
 import authRoutes from './routes/auth';
+import botsRoutes from './routes/bots';
+import botTemplatesRoutes from './routes/botTemplates';
+import subscriptionsRoutes from './routes/subscriptions';
+import paymentsRoutes from './routes/payments';
+import invoicesRoutes from './routes/invoices';
+import webhooksRoutes from './routes/webhooks';
 
 const app: Express = express();
 
@@ -48,7 +54,7 @@ app.use(cors({
 app.use(requestIdMiddleware);
 
 // Webhook routes (must be before express.json() to capture raw body)
-app.use('/api/webhooks', require('./routes/webhooks').default);
+app.use('/api/webhooks', webhooksRoutes);
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
@@ -68,13 +74,11 @@ app.get('/health', asyncHandler(async (_req: Request, res: Response) => {
 
 // API routes
 app.use('/api/auth', authRoutes);
-app.use('/api/bots', require('./routes/bots').default);
-app.use('/api/templates', require('./routes/botTemplates').default);
-app.use('/api/subscriptions', require('./routes/subscriptions').default);
-app.use('/api/payments', require('./routes/subscriptions').default);
-app.use('/api/payments', require('./routes/payments').default);
-app.use('/api/subscriptions', require('./routes/subscriptions').default);
-app.use('/api/invoices', require('./routes/invoices').default);
+app.use('/api/bots', botsRoutes);
+app.use('/api/templates', botTemplatesRoutes);
+app.use('/api/subscriptions', subscriptionsRoutes);
+app.use('/api/payments', paymentsRoutes);
+app.use('/api/invoices', invoicesRoutes);
 
 // 404 handler
 app.use((req: Request, res: Response) => {
@@ -92,6 +96,8 @@ app.use(errorHandler);
 // Initialize server
 const startServer = async () => {
   try {
+    logger.info('Starting server initialization...');
+
     // Initialize Redis
     await initializeRedis();
     logger.info('Redis initialized successfully');
@@ -112,6 +118,8 @@ const startServer = async () => {
     });
   } catch (error: any) {
     logger.error(`Failed to start server: ${error.message}`);
+    logger.error(`Stack: ${error.stack}`);
+    console.error('FULL ERROR:', error);
     process.exit(1);
   }
 };
